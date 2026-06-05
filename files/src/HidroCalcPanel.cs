@@ -58,16 +58,8 @@ namespace BimFireHidroCalc
             grid.Children.Add(header);
 
             // ── WebView2 ─────────────────────────────────────────────────
-            _webView = new WebView2
-            {
-                Source = new Uri("https://bim-fire-hidro-calc.vercel.app")
-            };
-            _webView.NavigationCompleted += (s, e) =>
-            {
-                _lblStatus.Text = e.IsSuccess
-                    ? "✔ BIM FIRE HIDRO CALC conectado"
-                    : "⚠ Verifique sua conexão";
-            };
+            // NÃO definir Source aqui — aguardar EnsureCoreWebView2Async em InitWebViewAsync
+            _webView = new WebView2();
             Grid.SetRow(_webView, 1);
             grid.Children.Add(_webView);
 
@@ -111,6 +103,31 @@ namespace BimFireHidroCalc
                 await _webView.EnsureCoreWebView2Async(env);
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+                // Navegar APÓS o CoreWebView2 estar pronto
+                _webView.CoreWebView2.NavigationCompleted += (s, e) =>
+                {
+                    if (e.IsSuccess)
+                    {
+                        _lblStatus.Text = "✔ BIM FIRE HIDRO CALC conectado";
+                    }
+                    else
+                    {
+                        _lblStatus.Text = $"⚠ Erro de navegação ({e.WebErrorStatus}) — tentando novamente...";
+                        // Auto-reload após 3 segundos em caso de falha
+                        System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ =>
+                        {
+                            _webView.Dispatcher.Invoke(() =>
+                            {
+                                try { _webView.CoreWebView2.Navigate("https://bim-fire-hidro-calc.vercel.app"); }
+                                catch { }
+                            });
+                        });
+                    }
+                };
+
+                _webView.CoreWebView2.Navigate("https://bim-fire-hidro-calc.vercel.app");
+
                 _ready = true;
                 if (_pendingMsg != null)
                 {
