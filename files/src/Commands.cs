@@ -43,8 +43,13 @@ namespace BimFireHidroCalc
                 if (el is Pipe pipe)
                 {
                     compM += (pipe.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH)?.AsDouble() ?? 0) * 0.3048;
-                    var comt = pipe.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "";
-                    if (!string.IsNullOrWhiteSpace(comt)) nomes.Add(comt.Trim().ToUpper());
+
+                    // 1º: parâmetro de projeto/instância "BimFire_Trecho" (nome exato do trecho no app)
+                    var nomePar = pipe.LookupParameter("BimFire_Trecho")?.AsString() ?? "";
+                    // 2º: fallback para o campo Comentários
+                    if (string.IsNullOrWhiteSpace(nomePar))
+                        nomePar = pipe.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(nomePar)) nomes.Add(nomePar.Trim().ToUpper());
                     continue;
                 }
                 var catId = el.Category?.Id.Value;
