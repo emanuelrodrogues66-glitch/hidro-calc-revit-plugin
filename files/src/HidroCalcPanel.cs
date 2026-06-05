@@ -133,18 +133,29 @@ namespace BimFireHidroCalc
                 _pendingMsg = msg;
         }
 
+        /// <summary>Envia um lote de trechos (JSON array) de uma só vez.</summary>
+        public async Task SendTrechosAsync(string jsonArray)
+        {
+            var msg = $"{{\"type\":\"REVIT_TRECHOS_LOTE\",\"data\":{jsonArray}}}";
+            if (_ready)
+                await PostMessageAsync(msg);
+            else
+                _pendingMsg = msg;
+        }
+
         private async Task PostMessageAsync(string json)
         {
             // Canal 1: window.postMessage (padrão)
             var script1 = $"window.postMessage({json}, '*');";
             await _webView.CoreWebView2.ExecuteScriptAsync(script1);
 
-            // Canal 2: função global __revitTrecho__ (mais confiável no WebView2)
-            // Extrai apenas o payload .data do JSON completo
+            // Canal 2: funções globais (mais confiável no WebView2)
             var script2 = $@"
 (function() {{
   var msg = {json};
-  if (typeof window.__revitTrecho__ === 'function' && msg && msg.data) {{
+  if (msg && msg.type === 'REVIT_TRECHOS_LOTE' && typeof window.__revitTrechosLote__ === 'function') {{
+    window.__revitTrechosLote__(msg.data);
+  }} else if (msg && msg.type === 'REVIT_TRECHO' && typeof window.__revitTrecho__ === 'function' && msg.data) {{
     window.__revitTrecho__(msg.data);
   }}
 }})();
