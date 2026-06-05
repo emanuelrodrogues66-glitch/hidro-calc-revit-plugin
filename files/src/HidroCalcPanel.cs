@@ -135,8 +135,21 @@ namespace BimFireHidroCalc
 
         private async Task PostMessageAsync(string json)
         {
-            var script = $"window.postMessage({json}, '*');";
-            await _webView.CoreWebView2.ExecuteScriptAsync(script);
+            // Canal 1: window.postMessage (padrão)
+            var script1 = $"window.postMessage({json}, '*');";
+            await _webView.CoreWebView2.ExecuteScriptAsync(script1);
+
+            // Canal 2: função global __revitTrecho__ (mais confiável no WebView2)
+            // Extrai apenas o payload .data do JSON completo
+            var script2 = $@"
+(function() {{
+  var msg = {json};
+  if (typeof window.__revitTrecho__ === 'function' && msg && msg.data) {{
+    window.__revitTrecho__(msg.data);
+  }}
+}})();
+";
+            await _webView.CoreWebView2.ExecuteScriptAsync(script2);
         }
     }
 
