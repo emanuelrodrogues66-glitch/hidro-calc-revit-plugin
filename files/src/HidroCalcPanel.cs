@@ -53,6 +53,19 @@ namespace BimFireHidroCalc
             };
             btnReload.Click += (s, e) => { _webView.Reload(); _lblStatus.Text = "Recarregando..."; };
             headerPanel.Children.Add(btnReload);
+
+            var btnDevTools = new Button
+            {
+                Content = " 🔍 ",
+                ToolTip = "Abrir DevTools (inspecionar erros)",
+                Margin = new Thickness(4, 0, 0, 0),
+                Background = Brushes.Transparent,
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(85, 85, 85)),
+                Cursor = System.Windows.Input.Cursors.Hand
+            };
+            btnDevTools.Click += (s, e) => { _webView.CoreWebView2?.OpenDevToolsWindow(); };
+            headerPanel.Children.Add(btnDevTools);
             header.Child = headerPanel;
             Grid.SetRow(header, 0);
             grid.Children.Add(header);
@@ -103,6 +116,13 @@ namespace BimFireHidroCalc
                 await _webView.EnsureCoreWebView2Async(env);
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                _webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+
+                // Limpar cache para garantir que carrega versão mais recente
+                await _webView.CoreWebView2.Profile.ClearBrowsingDataAsync(
+                    CoreWebView2BrowsingDataKinds.DiskCache |
+                    CoreWebView2BrowsingDataKinds.MemoryCache
+                );
 
                 // Impedir abertura de nova janela — redirecionar para o próprio WebView2
                 _webView.CoreWebView2.NewWindowRequested += (s, e) =>
