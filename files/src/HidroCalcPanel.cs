@@ -104,6 +104,19 @@ namespace BimFireHidroCalc
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
 
+                // Impedir abertura de nova janela — redirecionar para o próprio WebView2
+                _webView.CoreWebView2.NewWindowRequested += (s, e) =>
+                {
+                    e.Handled = true;
+                    _webView.CoreWebView2.Navigate(e.Uri);
+                };
+
+                // Garantir que links internos da SPA não sejam bloqueados
+                _webView.CoreWebView2.NavigationStarting += (s, e) =>
+                {
+                    _lblStatus.Text = "Carregando...";
+                };
+
                 // Navegar APÓS o CoreWebView2 estar pronto
                 _webView.CoreWebView2.NavigationCompleted += (s, e) =>
                 {
