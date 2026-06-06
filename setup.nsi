@@ -75,28 +75,32 @@ Section "Plugin BIM FIRE HIDRO CALC" SecMain
         DetailPrint "      WebView2 ja instalado. OK"
     ${EndIf}
 
-    ; ── 2. .NET 10 SDK ──────────────────────────────────────
+    ; ── 2. .NET 8 SDK ───────────────────────────────────────
     DetailPrint ""
-    DetailPrint "[2/4] Verificando .NET 10 SDK..."
+    DetailPrint "[2/4] Verificando .NET SDK..."
 
-    nsExec::ExecToStack '"$WINDIR\System32\cmd.exe" /C dotnet --list-sdks 2>nul'
-    Pop $0
-    Pop $1
+    ; Determinar caminho do dotnet (caminho fixo apos instalacao)
+    StrCpy $3 "$PROGRAMFILES64\dotnet\dotnet.exe"
 
-    StrCpy $2 $1 3
-    ${If} $2 != "10."
-        DetailPrint "      Baixando .NET 10 SDK (~200 MB, aguarde)..."
-        NSISdl::download "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x64.exe" "$TEMP\dotnet-sdk-10-win-x64.exe"
+    ${IfNot} ${FileExists} "$3"
+        ; Tentar caminho local do usuario
+        StrCpy $3 "$LOCALAPPDATA\Microsoft\dotnet\dotnet.exe"
+    ${EndIf}
+
+    ${IfNot} ${FileExists} "$3"
+        DetailPrint "      .NET SDK nao encontrado. Baixando .NET 8 SDK..."
+        NSISdl::download "https://download.microsoft.com/download/dotnet/8.0/dotnet-sdk-8.0.405-win-x64.exe" "$TEMP\dotnet-sdk-8-win-x64.exe"
         Pop $0
         ${If} $0 != "success"
-            MessageBox MB_ICONSTOP "Falha ao baixar .NET 10 SDK.$\nVerifique sua conexao com a internet.$\nErro: $0"
+            MessageBox MB_ICONSTOP "Falha ao baixar .NET 8 SDK.$\nVerifique sua conexao com a internet.$\nErro: $0"
             Abort
         ${EndIf}
-        DetailPrint "      Instalando .NET 10 SDK (pode demorar alguns minutos)..."
-        ExecWait '"$TEMP\dotnet-sdk-10-win-x64.exe" /quiet /norestart'
-        DetailPrint "      .NET 10 SDK instalado com sucesso."
+        DetailPrint "      Instalando .NET 8 SDK (aguarde)..."
+        ExecWait '"$TEMP\dotnet-sdk-8-win-x64.exe" /quiet /norestart'
+        StrCpy $3 "$PROGRAMFILES64\dotnet\dotnet.exe"
+        DetailPrint "      .NET 8 SDK instalado."
     ${Else}
-        DetailPrint "      .NET 10 SDK ja instalado. OK"
+        DetailPrint "      .NET SDK encontrado: $3"
     ${EndIf}
 
     ; ── 3. Compilar ─────────────────────────────────────────
@@ -107,10 +111,10 @@ Section "Plugin BIM FIRE HIDRO CALC" SecMain
 
     tem_revit:
         DetailPrint "      Revit 2027 encontrado. Compilando..."
-        nsExec::ExecToLog '"$WINDIR\System32\cmd.exe" /C dotnet build "$INSTDIR\src\BimFireHidroCalc.csproj" -c Release -o "$INSTDIR\build" --nologo -v quiet'
+        nsExec::ExecToLog '"$WINDIR\System32\cmd.exe" /C "$3" build "$INSTDIR\src\BimFireHidroCalc.csproj" -c Release -o "$INSTDIR\build" --nologo -v quiet 2>&1'
         Pop $0
         ${If} $0 != 0
-            MessageBox MB_ICONSTOP "Falha na compilacao do plugin.$\nCertifique-se de que o Revit 2027 esta instalado corretamente."
+            MessageBox MB_ICONSTOP "Falha na compilacao do plugin.$\nVerifique se o Revit 2027 e o .NET SDK estao instalados corretamente."
             Abort
         ${EndIf}
         DetailPrint "      Plugin compilado com sucesso."
