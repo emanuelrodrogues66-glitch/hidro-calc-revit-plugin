@@ -117,6 +117,7 @@ namespace BimFireHidroCalc
                 _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                 _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                 _webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+                _webView.CoreWebView2.Settings.IsTranslateUIEnabled = false;
 
                 // Limpar cache para garantir que carrega versão mais recente
                 await _webView.CoreWebView2.Profile.ClearBrowsingDataAsync(
